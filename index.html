@@ -1,31 +1,799 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en-GB" class="scroll-smooth">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A local-first decision dashboard for English–Hindi subtitle localisation evaluation.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Subtitle Benchmark | Model Evaluation</title>
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="src/app.mjs"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Evaluation | SRT Translation</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Figtree', 'sans-serif'], 
+                        heading: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            canvas: '#000000',
+                            soft: '#080808',
+                            tile1: '#111113',
+                            tile2: '#151518',
+                            tile3: '#0D0D0F',
+                            card: '#161618',
+                            ink: '#F5F5F7',
+                            muted: '#A1A1A6',
+                            muted80: '#8E8E93',
+                            muted48: '#636366',
+                            action: '#0A84FF',
+                            focus: '#409CFF',
+                            link: '#6EB8FF',
+                            hairline: 'rgba(255, 255, 255, 0.08)',
+                            divider: 'rgba(255, 255, 255, 0.06)',
+                            frosted: 'rgba(22, 22, 24, 0.72)'
+                        }
+                    },
+                    fontSize: {
+                        'body-base': ['17px', '1.47'],
+                        'display-hero': ['56px', '1.07'],
+                        'display-lg': ['40px', '1.10'],
+                        'display-md': ['34px', '1.47'],
+                    },
+                    letterSpacing: {
+                        'tight-apple': '-0.02em',
+                        'tighter-apple': '-0.03em'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <a class="skip" href="#main">Skip to evaluation</a>
-  <header class="top"><div class="shell top-inner"><a class="brand" href="#main">SUBTITLE<span> / </span>BENCHMARK</a><nav aria-label="Dashboard sections"><a href="#decision">Decision</a><a href="#evidence">Evidence</a><a href="#scenario">Economics</a><a href="#method">Method</a></nav><span class="tag">Local-first</span></div></header>
-  <main id="main" class="shell">
-    <section class="hero"><div><p class="eyebrow">MODEL EVALUATION / ENGLISH → HINDI</p><h1>Subtitle localisation<br>decision dashboard.</h1><p class="lede">Compare model output against consistent quality, cue integrity, reading pace and cost gates. Shortlist candidates based on evidence, not vendor claims.</p></div><div class="dataset"><span id="dataset-mode" class="tag">Synthetic demonstration</span><h2 id="dataset-title">Loading evaluation</h2><p id="dataset-meta" class="muted"></p><p class="small">Inputs stay in this browser session. No model API calls or analytics.</p></div></section>
-    <noscript><p class="notice">JavaScript is required to calculate metrics locally.</p></noscript>
-    <section class="panel" aria-labelledby="input-title"><div class="section-head"><div><p class="eyebrow">01 / INPUTS</p><h2 id="input-title">Evaluation dataset</h2></div><div class="actions"><button id="demo" type="button" class="secondary">Reset demo</button><button id="template" type="button" class="secondary">Download JSON example</button></div></div>
-      <div class="import-grid"><div class="import"><h3>Reviewed benchmark</h3><p class="muted">Import versioned JSON with aligned cues, human ratings and optional economics.</p><label for="json-file">Benchmark JSON</label><input id="json-file" type="file" accept=".json,application/json"></div><div class="import"><h3>Raw SRT comparison</h3><p class="muted">Inspect a source and one candidate. Linguistic scores remain unreviewed until ratings are supplied.</p><div class="fields"><div><label for="source-file">Source SRT</label><input id="source-file" type="file" accept=".srt,text/plain"></div><div><label for="target-file">Candidate SRT</label><input id="target-file" type="file" accept=".srt,text/plain"></div></div><button id="srt-import" type="button">Analyse SRT pair</button></div></div><p id="message" role="status" aria-live="polite" class="notice" hidden></p>
-    </section>
-    <section id="decision" aria-labelledby="decision-title"><div class="section-head"><div><p class="eyebrow">02 / DECISION</p><h2 id="decision-title">Release gates &amp; shortlist</h2></div><button id="export" type="button" class="secondary">Export metrics CSV</button></div>
-      <div class="panel controls"><div><label for="max-cps">Maximum graphemes / second</label><input id="max-cps" type="number" min="1" max="100" step="1" value="15"></div><div><label for="min-pace">Minimum pacing compliance (%)</label><input id="min-pace" type="number" min="0" max="100" step="1" value="90"></div><div><label for="min-quality">Minimum review score (%)</label><input id="min-quality" type="number" min="0" max="100" step="1" value="80"></div><p class="small">Full cue coverage, exact timing, full review and zero critical errors are fixed gates. Other thresholds are configurable assumptions.</p></div>
-      <div id="summary" class="stats" aria-live="polite"></div><div class="panel table-panel"><div class="table-wrap"><table><caption>Candidate metrics; only eligible candidates are ranked.</caption><thead><tr><th scope="col">Shortlist / candidate</th><th scope="col">Quality</th><th scope="col">Coverage</th><th scope="col">Reviewed</th><th scope="col">Pace pass</th><th scope="col">P95 CPS</th><th scope="col">Critical</th><th scope="col">Decision</th></tr></thead><tbody id="ranking"></tbody></table></div></div>
-      <div class="panel" id="capability"><h3>Human review dimensions</h3><p class="muted">Scores reflect reviewed cues only. Missing ratings are not treated as zero or as a pass.</p><div id="matrix" class="matrix"></div></div>
-    </section>
-    <section id="evidence" aria-labelledby="evidence-title"><div class="section-head"><div><p class="eyebrow">03 / EVIDENCE</p><h2 id="evidence-title">Cue-level inspection</h2></div></div><div class="panel"><div class="controls compact"><div><label for="candidate">Candidate</label><select id="candidate"></select></div><div><label for="issue-filter">Filter evidence</label><select id="issue-filter"><option value="all">All cues</option><option value="issues">Any issue</option><option value="critical">Critical meaning errors</option><option value="pacing">Pacing violations</option><option value="timing">Timestamp mismatches</option><option value="unreviewed">Unreviewed / missing</option></select></div></div><p id="evidence-summary" class="muted"></p><div id="cue-list" class="cue-list"></div><button type="button" id="more" class="secondary" hidden>Show more cues</button></div></section>
-    <section id="scenario" aria-labelledby="scenario-title"><div class="section-head"><div><p class="eyebrow">04 / ECONOMICS</p><h2 id="scenario-title">Cost &amp; scale scenario</h2></div></div><div class="panel"><div class="controls compact"><div><label for="hourly-rate">Reviewer hourly rate (<span class="currency">USD</span>)</label><input id="hourly-rate" type="number" min="0" max="1000000" step="0.01" value="20"></div><div><label for="volume">Number of equivalent batches</label><input id="volume" type="number" min="1" max="1000000" step="1" value="100"></div></div><p class="muted">Batch = the source dataset currently loaded. API rates and review minutes are supplied by the dataset, not fetched from providers.</p><div class="table-wrap"><table><caption>Translation and review costs in <span class="currency">USD</span>; no exchange-rate conversion.</caption><thead><tr><th scope="col">Candidate</th><th scope="col">API / batch</th><th scope="col">Review / batch</th><th scope="col">Total / batch</th><th scope="col">Projected total</th></tr></thead><tbody id="costs"></tbody></table></div></div></section>
-    <section id="method" aria-labelledby="method-title"><div class="section-head"><div><p class="eyebrow">05 / METHOD</p><h2 id="method-title">Interpretation &amp; limitations</h2></div></div><div class="method-grid"><article class="panel"><h3>Weighted linguistic quality</h3><p>Meaning 40%, grammar 20%, academic register 20%, pedagogical clarity 20%. Each cue receives a human score from 0 to 5. Scores are normalised to 100.</p></article><article class="panel"><h3>Reading pace</h3><p>Visible Unicode grapheme clusters divided by actual cue duration. Whitespace is normalised. This is a configurable screening metric, not proof of learner readability.</p></article><article class="panel"><h3>Decision policy</h3><p>Only fully reviewed candidates meeting every gate qualify. Shortlist order is quality, then pacing compliance, then candidate ID. A pass supports further validation, not automatic deployment.</p></article><article class="panel"><h3>Evidence limitations</h3><p>The default data is fictional. Import actual reviewed outputs for a real evaluation. Validate age-group comprehension, contextual fidelity, latency, and operational risk before adoption.</p></article></div><p class="small"><a href="docs/methodology.md">Evaluation methodology</a> · <a href="docs/product-spec.md">Product requirements</a> · <a href="README.md">Repository documentation</a></p></section>
-  </main><footer class="shell footer">Subtitle Benchmark <span>·</span> Decision-support prototype <span>·</span> No remote dependencies</footer>
+<body class="selection:bg-apple-focus selection:text-white pb-10 relative">
+
+    <!-- Global Nav -->
+    <nav aria-label="Primary navigation" class="fixed top-0 left-0 right-0 z-50 bg-[#000000] border-b border-[rgba(255,255,255,0.08)]">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative h-12 flex justify-between items-center">
+            
+            <div class="text-[17px] font-heading text-apple-ink tracking-tight-apple">
+                AI Model Evaluation
+            </div>
+
+            <!-- Hamburger Button -->
+            <button id="menu-btn" class="flex flex-col justify-center items-center gap-[4px] w-8 h-8 rounded hover:bg-[#111113] transition-colors focus:outline-none z-50 cursor-pointer" aria-label="Toggle Navigation Menu" aria-expanded="false" aria-controls="nav-menu">
+                <span id="line1" class="hamburger-line w-4 h-[1.5px] rounded-full origin-center"></span>
+                <span id="line2" class="hamburger-line w-4 h-[1.5px] rounded-full"></span>
+                <span id="line3" class="hamburger-line w-4 h-[1.5px] rounded-full origin-center"></span>
+            </button>
+
+            <!-- Frosted Dropdown Menu -->
+            <div id="nav-menu" class="absolute top-14 right-4 w-64 rounded-xl p-2 z-40 shadow-2xl" role="navigation" aria-label="Main Navigation">
+                <div class="flex flex-col gap-1">
+                    <a href="#ranking" class="nav-item block px-4 py-2.5 text-sm font-heading text-apple-muted hover:text-apple-ink rounded-lg transition-colors" aria-label="Navigate to Model Ranking">Ranking</a>
+                    <a href="#metrics" class="nav-item block px-4 py-2.5 text-sm font-heading text-apple-muted hover:text-apple-ink rounded-lg transition-colors" aria-label="Navigate to Capability Matrix">Capability Matrix</a>
+                    <a href="#explorer" class="nav-item block px-4 py-2.5 text-sm font-heading text-apple-muted hover:text-apple-ink rounded-lg transition-colors" aria-label="Navigate to Model Output Explorer">Output Explorer</a>
+                    <a href="#evidence" class="nav-item block px-4 py-2.5 text-sm font-heading text-apple-muted hover:text-apple-ink rounded-lg transition-colors" aria-label="Navigate to Evidence-Based Comparison">Evidence</a>
+                    <a href="#insight" class="nav-item block px-4 py-2.5 text-sm font-heading text-apple-muted hover:text-apple-ink rounded-lg transition-colors" aria-label="Navigate to Executive Insight">Economics</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Stack -->
+    <main class="w-full">
+
+        <!-- Hero Section -->
+        <section class="bg-apple-canvas pt-28 pb-14 px-4 sm:px-6 lg:px-8 text-center border-b border-[rgba(255,255,255,0.04)]">
+            <div class="max-w-[980px] mx-auto">
+                <h1 class="text-display-lg md:text-display-hero font-heading text-apple-ink tracking-tight-apple">AI Model Evaluation for <span class="text-apple-action">SRT Translation</span></h1>
+            </div>
+        </section>
+
+        <!-- Scope and Methodology -->
+        <section id="methodology" aria-labelledby="methodology-heading" class="bg-apple-tile1 py-14 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-[1440px] mx-auto">
+                <h2 id="methodology-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple mb-8 text-center md:text-left">Audit Scope & Methodology</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24">
+                    <div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-4">Audit Scope</h3>
+                        <p class="text-body-base text-apple-muted">
+                            English-to-Hindi subtitle translation for Interactive Learning Modules (ILMs), evaluated for linguistic quality, pedagogical suitability and subtitle readability.
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-4">Evaluation Methodology</h3>
+                        <p class="text-body-base text-apple-muted mb-6">
+                            Five evaluation dimensions, with overall scores reported out of 100.
+                        </p>
+                        
+                        <div class="flex flex-col gap-4">
+                            <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-4 border-t border-apple-hairline pt-3">
+                                <div class="sm:w-2/5 font-heading text-apple-ink text-[14px]">Pedagogical Scaffolding</div>
+                                <div class="sm:w-3/5 text-apple-muted80 text-[14px] mt-1 sm:mt-0">Bridges Hindi text with source English concepts.</div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-4 border-t border-apple-hairline pt-3">
+                                <div class="sm:w-2/5 font-heading text-apple-ink text-[14px]">Academic Register</div>
+                                <div class="sm:w-3/5 text-apple-muted80 text-[14px] mt-1 sm:mt-0">Maintains formal, age-appropriate vocabulary suitable for education.</div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-4 border-t border-apple-hairline pt-3">
+                                <div class="sm:w-2/5 font-heading text-apple-ink text-[14px]">Subtitle Pacing</div>
+                                <div class="sm:w-3/5 text-apple-muted80 text-[14px] mt-1 sm:mt-0">Assesses subtitle length and reading pace.</div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-4 border-t border-apple-hairline pt-3">
+                                <div class="sm:w-2/5 font-heading text-apple-ink text-[14px]">Syntactic Accuracy</div>
+                                <div class="sm:w-3/5 text-apple-muted80 text-[14px] mt-1 sm:mt-0">Ensures grammatical correctness and natural Hindi sentence structure.</div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-baseline sm:gap-4 border-t border-apple-hairline pt-3">
+                                <div class="sm:w-2/5 font-heading text-apple-ink text-[14px]">Semantic Accuracy</div>
+                                <div class="sm:w-3/5 text-apple-muted80 text-[14px] mt-1 sm:mt-0">Preserves the meaning, intent, and instructional value of the source text.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARDS: Model Ranking -->
+        <section id="ranking" class="bg-apple-canvas py-14 px-4 sm:px-6 lg:px-8 scroll-mt-12" aria-labelledby="ranking-heading">
+            <div class="max-w-[1440px] mx-auto">
+                <div class="text-center mb-8">
+                    <h2 id="ranking-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple">Model Ranking</h2>
+                    
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Rank 1 -->
+                    <div class="apple-card p-6 flex flex-col h-full items-center text-center border-[#0A84FF]/30">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted80 mb-2">Rank 1</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:96;--ring:#0A84FF" role="img" aria-label="Donut chart showing 96 percent score for Gemini 3"><span>96%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">Gemini 3</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set C &middot; Fast Variant</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Strong bilingual scaffolding and concise translation.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-action mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-ink">Bilingual educational scaffolding.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 2 -->
+                    <div class="apple-card p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted80 mb-2">Rank 2</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:88;--ring:#6EB8FF" role="img" aria-label="Donut chart showing 88 percent score for GPT 5.5 Plus"><span>88%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">GPT 5.5+</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set B &middot; Pure Hindi</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Exhibits high syntactic fluency and maintains rigorous academic register throughout.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-action mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-ink">Formal pure Hindi environments.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 3 -->
+                    <div class="apple-card p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted80 mb-2">Rank 3</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:85;--ring:#8b5cf6" role="img" aria-label="Donut chart showing 85 percent score for Sarvam AI"><span>85%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">Sarvam AI</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set G &middot; Indic Native</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Strong grammatical fluency and idiom handling, with inconsistent register.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-[#8b5cf6] mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-ink">High-volume translation with linguistic QC.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 4 -->
+                    <div class="apple-card p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted80 mb-2">Rank 4</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:82;--ring:#F5F5F7" role="img" aria-label="Donut chart showing 82 percent score for GPT-4o"><span>82%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">GPT-4o</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set F &middot; Omni Model</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Fluent translation with occasional literal rendering of idioms.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-muted80 mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-ink">Translation with idiom review.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 5 -->
+                    <div class="apple-card bg-apple-tile2 p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted80 mb-2">Rank 5</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:75;--ring:#8E8E93" role="img" aria-label="Donut chart showing 75 percent score for Gemma-4"><span>75%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-muted mb-1">Gemma-4</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set D &middot; Offline</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Mechanically sound structure, hampered by colloquial lexical choices unsuitable for academia.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-muted80 mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-muted">Usable baseline; needs correction.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 6 -->
+                    <div class="apple-card bg-apple-tile2 p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted48 mb-2">Rank 6</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:58;--ring:#8E8E93" role="img" aria-label="Donut chart showing 58 percent score for Minimax"><span>58%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-muted mb-1">Minimax</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set E &middot; Offline</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Highly formal vocabulary can increase reading difficulty.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-muted48 mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-muted">Advanced literary or legal contexts only.</span>
+                        </div>
+                    </div>
+
+                    <!-- Rank 7 -->
+                    <div class="apple-card bg-apple-tile2 p-6 flex flex-col h-full items-center text-center">
+                        <div class="text-[10px] font-heading font-bold uppercase tracking-widest text-apple-muted48 mb-2">Rank 7</div>
+                        <div class="chart-container-small w-24 h-24 mb-4">
+                            <div class="score-ring" style="--score:45;--ring:#636366" role="img" aria-label="Donut chart showing 45 percent score for GPT 5.5"><span>45%</span></div>
+                        </div>
+                        <h3 class="text-[21px] font-heading text-apple-muted mb-1">GPT 5.5</h3>
+                        <p class="text-[12px] text-apple-muted48 uppercase tracking-widest mb-4">Set A &middot; Eng+Hin Mix</p>
+                        <p class="text-[14px] text-apple-muted80 leading-relaxed mb-6 flex-grow">Relies heavily on transliteration, failing to provide the essential Hindi vocabulary required for education.</p>
+                        <div class="w-full pt-4 border-t border-apple-hairline text-left">
+                            <span class="block text-[10px] font-heading uppercase tracking-widest text-apple-muted48 mb-1">Use Case</span>
+                            <span class="text-[14px] text-apple-muted">Casual conversational media only.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- METRICS: Capability Matrix -->
+        <section id="metrics" class="bg-apple-soft py-14 px-4 sm:px-6 lg:px-8 scroll-mt-12" aria-labelledby="metrics-heading">
+            <div class="max-w-[1440px] mx-auto">
+                <div class="text-center mb-8">
+                    <h2 id="metrics-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple">Capability Matrix & Pacing</h2>
+                    
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Radar -->
+                    <div class="apple-card p-8 flex flex-col">
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">Parameter Benchmarking</h3>
+                        
+                        
+                        <div class="chart-container-medium flex-grow w-full">
+                            <canvas id="radarChart" aria-label="Radar chart comparing Gemini 3, GPT 5.5+, GPT-4o and Sarvam AI across five evaluation dimensions" role="img"></canvas>
+                        </div>
+<details id="radar-data" class="chart-data"><summary>View data</summary><div class="chart-fallback-wrap"><table class="chart-fallback"><thead><tr><th scope="col">Model</th><th scope="col">Pedagogy</th><th scope="col">Register</th><th scope="col">Pacing score</th><th scope="col">Grammar</th><th scope="col">Accuracy</th></tr></thead><tbody><tr><th scope="row">Gemini 3</th><td>98</td><td>92</td><td>95</td><td>90</td><td>100</td></tr><tr><th scope="row">GPT 5.5+</th><td>40</td><td>98</td><td>90</td><td>98</td><td>85</td></tr><tr><th scope="row">GPT-4o</th><td>40</td><td>85</td><td>93</td><td>80</td><td>85</td></tr><tr><th scope="row">Sarvam AI</th><td>80</td><td>95</td><td>80</td><td>95</td><td>95</td></tr></tbody></table></div></details>
+                        
+                    </div>
+
+                    <!-- Bar Chart -->
+                    <div class="apple-card p-8 flex flex-col">
+                        <h3 class="text-[21px] font-heading text-apple-ink mb-1">Character Count: Cue 7</h3>
+                        
+                        
+                        <div class="chart-container-medium flex-grow w-full">
+                            <canvas id="cpsBarChart" aria-label="Reported character counts for cue 7 across seven evaluated variants." role="img"></canvas>
+                        </div>
+<details id="count-data" class="chart-data"><summary>View data</summary><div class="chart-fallback-wrap"><table class="chart-fallback"><thead><tr><th scope="col">Model</th><th scope="col">Characters</th></tr></thead><tbody><tr><th scope="row">Set C (Gemini)</th><td>107</td></tr><tr><th scope="row">Set G (Sarvam)</th><td>118</td></tr><tr><th scope="row">Set F (GPT-4o)</th><td>119</td></tr><tr><th scope="row">Set E (Minimax)</th><td>120</td></tr><tr><th scope="row">Set B (GPT-5.5+)</th><td>125</td></tr><tr><th scope="row">Set A (GPT 5.5 - Eng+Hin)</th><td>133</td></tr><tr><th scope="row">Set D (Gemma)</th><td>152</td></tr></tbody></table></div></details>
+                        
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SAMPLES: Model Output Explorer -->
+        <section id="explorer" class="bg-apple-tile1 py-14 px-4 sm:px-6 lg:px-8 scroll-mt-12" aria-labelledby="explorer-heading">
+            <div class="max-w-[1440px] mx-auto">
+                <div class="text-center mb-8">
+                    <h2 id="explorer-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple">Model Output Explorer</h2>
+                    
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Sidebar -->
+                    <div class="w-full md:w-1/4 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible gap-2" role="tablist" aria-label="Model Selection">
+                        <button class="btn-utility explorer-tab-btn active flex-shrink-0" data-target="setC" id="tab-setC" role="tab" aria-selected="true" tabindex="0" aria-controls="panel-setC" >
+                            <span class="block text-apple-ink font-heading mb-1">Set C: Gemini 3</span>
+                            <span class="block text-[12px] text-apple-muted80 font-normal">Fast / Bilingual</span>
+                        </button>
+                        
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setB" id="tab-setB" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setB" >
+                            <span class="block text-apple-ink font-heading mb-1">Set B: GPT 5.5+</span>
+                            <span class="block text-[12px] text-apple-muted80 font-normal">Pure Hindi</span>
+                        </button>
+                        
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setF" id="tab-setF" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setF" >
+                            <span class="block text-apple-ink font-heading mb-1">Set F: GPT-4o</span>
+                            <span class="block text-[12px] text-apple-muted80 font-normal">Omni Model</span>
+                        </button>
+
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setE" id="tab-setE" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setE" >
+                            <span class="block text-apple-ink font-heading mb-1">Set E: Minimax</span>
+                            <span class="block text-[12px] text-apple-muted80 font-normal">Offline LLM</span>
+                        </button>
+
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setG" id="tab-setG" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setG" >
+                            <span class="block text-apple-ink font-heading mb-1">Set G: Sarvam AI</span>
+                            <span class="block text-[12px] text-apple-muted80 font-normal">Indic Native</span>
+                        </button>
+
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setD" id="tab-setD" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setD" >
+                            <span class="block text-apple-muted font-heading mb-1">Set D: Gemma-4</span>
+                            <span class="block text-[12px] text-apple-muted48 font-normal">Offline LLM</span>
+                        </button>
+
+                        <button class="btn-utility explorer-tab-btn flex-shrink-0" data-target="setA" id="tab-setA" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-setA" >
+                            <span class="block text-apple-muted font-heading mb-1">Set A: GPT 5.5</span>
+                            <span class="block text-[12px] text-apple-muted48 font-normal">Eng+Hin Mix</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="w-full md:w-3/4 apple-card p-6 sm:p-10 relative min-h-[400px]">
+                        
+                        
+                        <div class="font-mono text-[14px] leading-loose text-apple-muted whitespace-pre-wrap tab-content-container mt-2">
+                            
+                            <!-- Panel C -->
+                            <div id="panel-setC" class="content-panel active-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-setC">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein humne dekha ki jungle mein kachre jaisi ek saadhaaran chinta bhi kaise kaarvaai ka kaaran ban sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki khula patra (open letter) aapke vichaaron ko spasht roop se vyakt karne mein kaise madad karta hai aur yaachikaen (petition) sarvajanik samarthan kaise dikhati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Milkar, yeh aapki awaaz ko sune jaane ke liye shaktishaali saadhan ban jaate hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch mukhya tatvon ko bhi samjha jo ek khule patra ko prabhaavshaali banaate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Sammanpoorn bhaasha, spasht sandesh, apne vichaar ke samarthan mein pramaan, seedha kaarvaai ka aahvaan aur vinamrata ka sparsh.
+                            </div>
+
+                            <!-- Panel B -->
+                            <div id="panel-setB" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setB">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki jungle mein kachre jaisi ek saadhaaran chinta bhi kaarvaai ki aur le ja sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki khule patr kaise aapke vichaaron ko spasht roop se vyakt karne mein madad karte hain aur yaachikaayen kaise jan samarthan dikhaati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Saath milkar, ye aapki awaaz ko sunaane ke liye shaktishaali saadhan hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch pramukh tatvon ka bhi adhyyan kiya jo ek khule patr ko majboot banaate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Ek sammanjanak swar, ek spasht sandesh, apne tark ke samarthan mein pramaan, kaarvaai ke liye seedha aahvaan aur shishtata ka sparsh.
+                            </div>
+
+                            <!-- Panel F -->
+                            <div id="panel-setF" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setF">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki kaise jungle mein kachre jaisi ek saadharan chinta kaarvaai ka kaaran ban sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki khule patra aapki baat ko spasht roop se vyakt karne mein kaise madad kar sakte hain aur yaachikaayen janta ke samarthan ko kaise darshaati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Saath mein, ye aapki awaaz sunaane ke liye shaktishaali upkaran hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch pramukh tatvon ka bhi pata lagaaya jo ek khule patra ko majboot banaate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Ek sammaanajanak lehja, ek spasht sandesh, apne bindu ka samarthan karne ke liye pramaan, kaarvaai ka ek seedha aahvaan aur ek sparshbhari vinamrata.
+                            </div>
+
+                            <!-- Panel E -->
+                            <div id="panel-setE" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setE">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki jungle mein kooda jaisi ek chhoti si chinta karvaai ki or le ja sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki khule patr aapko apne vicharon ko spasht roop se vyakt karne mein kaise madad karte hain aur yaachikayen janata ke samarthan ko kaise darshati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Saath milkar, ve aapki awaaz sunvaai karane ke shaktishaali upkaran hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne paanch mahatvapurn tatvon ka bhi anveshan kiya jo ek khule patr ko mazboot banate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Ek sammaanajanak svar, ek spasht sandesh, aapke tark ka samarthan karne ke liye saakshya, karvaai ke liye seedha aahvaan aur thodi vinamrata.
+                            </div>
+
+                            <!-- Panel G -->
+                            <div id="panel-setG" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setG">
+<span class="text-apple-muted48">1</span>
+<span class="text-[#8b5cf6] font-bold">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki kaise jangal mein kachre jaisi ek saadharan chinta kaaryavaahi ko janm de sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-[#8b5cf6] font-bold">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki kaise khule patra aapko apne vichaaron ko spasht roop se vyakt karne mein madad kar sakte hain aur kaise yaachikaen saarvajanik samarthan dikhaati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-[#8b5cf6] font-bold">00:00:24,000 --> 00:00:28,000</span>
+Saath milkar, ve aapki aawaaz ko buland karne ke shaktishaali upkaran hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-[#8b5cf6] font-bold">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch pramukh tatvon ka bhi pata lagaya jo ek khule patra ko majboot banaate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-[#8b5cf6] font-bold">00:00:34,000 --> 00:00:44,000</span>
+Ek sammaanjanak lahja, ek spasht sandesh, aapke tark ka samarthan karne ke liye pramaan, kaaryavaahi ke liye ek seedha aahvaan aur vinamrata ka sparsh.
+                            </div>
+
+                            <!-- Panel D -->
+                            <div id="panel-setD" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setD">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki kaise jungle mein koode-karkat jaisi ek saadharan chinta karvaai ki or le ja sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki kaise khule patra aapko apne vichaaron ko spasht roop se vyakt karne mein madad kar sakte hain aur kaise yaachikaen jan-samarthan dikhaati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Saath milkar, ye aapki awaaz pahunchane ke shaktishaali upakaran hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch mukhya tatvon par bhi charcha ki jo ek khule patra ko prabhaavshaali banaate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Ek sammaanajanak lehja, ek spasht sandesh, aapki baat ke samarthan mein pramaan, karvaai ke liye ek seedha aahvaan aur thodi vinamrata.
+                            </div>
+
+                            <!-- Panel A -->
+                            <div id="panel-setA" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-setA">
+<span class="text-apple-muted48">1</span>
+<span class="text-apple-link">00:00:00,000 --> 00:00:15,000</span>
+Is ILM mein, humne dekha ki kaise jungle mein kachre jaisi ek sadharan chinta karvai ka karan ban sakti hai.
+
+<span class="text-apple-muted48">2</span>
+<span class="text-apple-link">00:00:15,000 --> 00:00:24,000</span>
+Humne seekha ki kaise open letters aapko apne vicharon ko spasht roop se vyakt karne mein madad kar sakte hain aur kaise petitions sarvajanik samarthan dikhati hain.
+
+<span class="text-apple-muted48">3</span>
+<span class="text-apple-link">00:00:24,000 --> 00:00:28,000</span>
+Saath milkar, ve aapki awaaz buland karne ke liye shaktishali upkaran hain.
+
+<span class="text-apple-muted48">4</span>
+<span class="text-apple-link">00:00:28,000 --> 00:00:34,000</span>
+Humne un paanch pramukh tatvon ki bhi khoj ki jo ek open letter ko mazboot banate hain.
+
+<span class="text-apple-muted48">5</span>
+<span class="text-apple-link">00:00:34,000 --> 00:00:44,000</span>
+Ek sammanjanak lahja, ek spasht sandesh, aapki baat ka samarthan karne ke liye saboot, karvai ka seedha aahvan aur shishtachar ka bhav.
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EVIDENTIARY ANALYSIS -->
+        <section id="evidence" class="bg-apple-canvas py-14 px-4 sm:px-6 lg:px-8 scroll-mt-12" aria-labelledby="evidence-heading">
+            <div class="max-w-[1440px] mx-auto">
+                <div class="text-center mb-8">
+                    <h2 id="evidence-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple">Evidence-Based Comparison</h2>
+                    
+                </div>
+
+                <div class="apple-card p-6 md:p-10 border-0 md:border md:border-apple-hairline bg-transparent md:bg-apple-card">
+                    <!-- Tabs -->
+                    <div class="flex flex-wrap gap-2 mb-10 border-b border-apple-hairline pb-6" role="tablist" aria-label="Evidence categories">
+                        <button class="btn-pill evidence-tab-btn active" data-target="ev1" id="tab-ev1" role="tab" aria-selected="true" tabindex="0" aria-controls="panel-ev1" >
+                            1. Bridging Concepts
+                        </button>
+                        <button class="btn-pill evidence-tab-btn" data-target="ev4" id="tab-ev4" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-ev4" >
+                            2. Academic Register
+                        </button>
+                        <button class="btn-pill evidence-tab-btn" data-target="ev2" id="tab-ev2" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-ev2" >
+                            3. Idiomatic Accuracy
+                        </button>
+                    </div>
+
+                    <!-- Contents -->
+                    <div class="tab-content-container">
+                        
+                        <!-- Evidence 1 -->
+                        <div id="panel-ev1" class="content-panel active-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-ev1">
+                            <div class="mb-10 max-w-3xl">
+                                <h3 class="text-[21px] font-heading text-apple-ink mb-4">Domain Terminology & Scaffolding</h3>
+                                <p class="text-body-base text-apple-muted80 italic">'We learned how open letters help express your ideas clearly and how petitions show public support.'</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set C (Gemini 3)</h4>
+                                        <span class="text-[10px] text-apple-action uppercase tracking-widest font-heading font-bold">Winner</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Humne seekha ki khula patra (open letter) aapke vichaaron ko spasht roop se vyakt karne mein kaise madad karta hai...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Retains English terminology in parentheses to support concept recognition.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set F (GPT-4o)</h4>
+                                        <span class="text-[10px] text-apple-ink uppercase tracking-widest font-heading font-bold">Pure Hindi</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Humne seekha ki khule patra aapki baat ko spasht roop se vyakt karne mein kaise madad kar sakte hain...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Fluent Hindi rendering without bilingual terminology scaffolding.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set G (Sarvam)</h4>
+                                        <span class="text-[10px] text-[#8b5cf6] uppercase tracking-widest font-heading font-bold">Pure Hindi</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Humne seekha ki kaise khule patra aapko apne vichaaron ko spasht roop se vyakt karne mein madad kar sakte hain...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Clear terminology; grammatical consistency requires review.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1 border-t-2 border-t-[#636366]">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-muted text-sm">Set A (GPT 5.5)</h4>
+                                        <span class="text-[10px] text-apple-muted48 uppercase tracking-widest font-heading font-bold">Rejected</span>
+                                    </div>
+                                    <p class="text-apple-muted48 text-[14px] leading-relaxed italic mb-8 flex-grow">'Humne seekha ki kaise open letters aapko apne vicharon ko...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Relies heavily on transliteration. Assumes the student already comprehends the English vocabulary.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Evidence 4 -->
+                        <div id="panel-ev4" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-ev4">
+                            <div class="mb-10 max-w-3xl">
+                                <h3 class="text-[21px] font-heading text-apple-ink mb-4">Academic Register & Tone Appropriateness</h3>
+                                <p class="text-body-base text-apple-muted80 italic">'A respectful tone, a clear message, evidence to support your argument, a direct call to action, and a touch of politeness.'</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set B (GPT 5.5+)</h4>
+                                        <span class="text-[10px] text-apple-action uppercase tracking-widest font-heading font-bold">Winner</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Ek sammanjanak swar, ek spasht sandesh, apne tark ke samarthan mein pramaan...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Uses 'pramaan', balancing formal register and accessibility.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set G (Sarvam)</h4>
+                                        <span class="text-[10px] text-[#8b5cf6] uppercase tracking-widest font-heading font-bold">Runner-Up</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Ek sammaanjanak lahja, ek spasht sandesh, aapke tark ka samarthan karne ke liye pramaan...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Uses 'pramaan' with natural sentence structure in this excerpt.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set E (Minimax)</h4>
+                                        <span class="text-[10px] text-apple-muted80 uppercase tracking-widest font-heading font-bold">Hyper-Formal</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'Ek sammaanajanak svar, ek spasht sandesh, aapke tark ka samarthan karne ke liye saakshya...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Uses the more formal term 'saakshya', which may increase reading difficulty.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-muted text-sm">Set D (Gemma)</h4>
+                                        <span class="text-[10px] text-apple-muted48 uppercase tracking-widest font-heading font-bold">Colloquial Flaw</span>
+                                    </div>
+                                    <p class="text-apple-muted48 text-[14px] leading-relaxed italic mb-8 flex-grow">'...jungle mein koode-karkat jaisi ek saadharan chinta...'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Uses 'koode-karkat', a more colloquial vocabulary choice.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Evidence 2 -->
+                        <div id="panel-ev2" class="content-panel" role="tabpanel" tabindex="0" hidden aria-labelledby="tab-ev2">
+                            <div class="mb-10 max-w-3xl">
+                                <h3 class="text-[21px] font-heading text-apple-ink mb-4">Idiomatic Accuracy</h3>
+                                <p class="text-body-base text-apple-muted80 italic">'A respectful tone, a clear message, evidence to support your argument, a direct call to action, and a touch of politeness.'</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set B (GPT 5.5+)</h4>
+                                        <span class="text-[10px] text-apple-action uppercase tracking-widest font-heading font-bold">Winner</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'...kaarvaai ke liye seedha aahvaan aur shishtata ka sparsh.'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Renders 'touch of politeness' as 'shishtata ka sparsh'.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set G (Sarvam)</h4>
+                                        <span class="text-[10px] text-[#8b5cf6] uppercase tracking-widest font-heading font-bold">Winner</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'...kaaryavaahi ke liye ek seedha aahvaan aur vinamrata ka sparsh.'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Renders 'touch of politeness' as 'vinamrata ka sparsh'.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set C (Gemini 3)</h4>
+                                        <span class="text-[10px] text-apple-link uppercase tracking-widest font-heading font-bold">Capable</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'...seedha kaarvaai ka aahvaan aur vinamrata ka sparsh.'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        Uses 'vinamrata ka sparsh', consistent with the source phrase.
+                                    </div>
+                                </div>
+                                <div class="apple-card p-6 flex flex-col h-full bg-apple-tile1 border-t-2 border-t-[#f43f5e]">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="font-heading font-medium text-apple-ink text-sm">Set F (GPT-4o)</h4>
+                                        <span class="text-[10px] text-[#f43f5e] uppercase tracking-widest font-heading font-bold">Literal Flaw</span>
+                                    </div>
+                                    <p class="text-apple-muted text-[14px] leading-relaxed italic mb-8 flex-grow">'...kaarvaai ka ek seedha aahvaan aur ek sparshbhari vinamrata.'</p>
+                                    <div class="text-[13px] text-apple-muted80 border-t border-apple-hairline pt-4">
+                                        <span class="text-[#f43f5e] font-medium">Literal phrasing:</span> 'Sparshbhari' introduces an awkward literal construction.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Executive Insight & Economics -->
+        <section id="insight" class="bg-apple-tile1 py-14 px-4 sm:px-6 lg:px-8 scroll-mt-12" aria-labelledby="insight-heading">
+            <div class="max-w-[1440px] mx-auto">
+                <div class="text-center mb-8">
+                    <h2 id="insight-heading" class="text-display-md font-heading text-apple-ink tracking-tight-apple">Recommendation & Economics</h2>
+                    
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
+                    
+                    <div class="flex flex-col justify-center">
+                        <h3 class="text-[24px] font-heading text-apple-ink mb-6">Model Selection</h3>
+                        <p class="text-body-base text-apple-muted leading-relaxed mb-6"><strong class="text-apple-ink">Gemini 3</strong> ranks highest in the recorded comparison, with strengths in bilingual scaffolding and concise translation.</p>
+                        <p class="text-body-base text-apple-muted leading-relaxed mb-8"><strong class="text-apple-ink">GPT 5.5+</strong> and <strong class="text-apple-ink">GPT-4o</strong> are alternatives for formal Hindi translation, with idiomatic review required where applicable.</p>
+
+                        <h3 class="text-[24px] font-heading text-apple-ink mb-6">Sarvam AI</h3>
+                        <p class="text-body-base text-apple-muted leading-relaxed">Sarvam AI ranks third in the recorded comparison. Strong results in register and idiomatic phrasing coexist with grammatical and code-switching issues; consistent linguistic QC remains necessary.</p>
+                    </div>
+
+                    
+                    <div class="flex flex-col gap-4">
+                        <div class="mb-4">
+                            <h3 class="text-[16px] font-heading font-semibold text-apple-ink mb-1">English &rarr; Hindi SRT Translation Cost</h3>
+                            <p class="text-[13px] text-apple-muted80">Estimated translation cost per 30-minute SRT · 13k input / 15.5k output tokens.</p>
+                        </div>
+                        
+                        <!-- Gemini 3 Flash Preview -->
+                        <div class="apple-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-l-4 border-l-[#10b981]">
+                            <div class="w-full md:w-auto">
+                                <h4 class="font-heading font-semibold text-apple-ink text-lg">Gemini 3 Flash Preview</h4>
+                                <div class="text-[12px] text-apple-muted mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Input: ₹0.32</span>
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Output: ₹1.10</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-6 md:gap-8 w-full md:w-auto justify-between md:justify-end border-t border-apple-hairline md:border-t-0 pt-4 md:pt-0">
+                                <div class="text-left md:text-right flex flex-col justify-center">
+                                    <span class="text-[12px] text-[#10b981] uppercase tracking-widest font-heading font-bold mb-1">Preferred</span>
+                                </div>
+                                <div class="text-right pl-4 border-l border-apple-hairline">
+                                    <span class="block text-[21px] font-heading font-bold text-apple-ink">₹1.43</span>
+                                    <span class="text-[11px] text-apple-muted80 uppercase tracking-widest font-semibold">Total Cost</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gemini 3.1 Flash Lite Preview -->
+                        <div class="apple-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-l-4 border-l-[#6EB8FF]">
+                            <div class="w-full md:w-auto">
+                                <h4 class="font-heading font-semibold text-apple-ink text-lg">Gemini 3.1 Flash Lite Preview</h4>
+                                <div class="text-[12px] text-apple-muted mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Input: ₹0.27</span>
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Output: ₹0.33</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-6 md:gap-8 w-full md:w-auto justify-between md:justify-end border-t border-apple-hairline md:border-t-0 pt-4 md:pt-0">
+                                <div class="text-left md:text-right flex flex-col justify-center">
+                                    <span class="text-[12px] text-[#6EB8FF] uppercase tracking-widest font-heading font-bold mb-1">Runner Up</span>
+                                    <span class="text-[10px] text-apple-muted80">Manual QC Required</span>
+                                </div>
+                                <div class="text-right pl-4 border-l border-apple-hairline">
+                                    <span class="block text-[21px] font-heading font-bold text-apple-ink">₹0.59</span>
+                                    <span class="text-[11px] text-apple-muted80 uppercase tracking-widest font-semibold">Total Cost</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gemini 3.1 Pro Preview -->
+                        <div class="apple-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-l-4 border-l-[#f43f5e]">
+                            <div class="w-full md:w-auto">
+                                <h4 class="font-heading font-semibold text-apple-ink text-lg">Gemini 3.1 Pro Preview</h4>
+                                <div class="text-[12px] text-apple-muted mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Input: ₹1.06</span>
+                                    <span class="bg-[#111113] px-2 py-1 rounded">Output: ₹8.97</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-6 md:gap-8 w-full md:w-auto justify-between md:justify-end border-t border-apple-hairline md:border-t-0 pt-4 md:pt-0">
+                                <div class="text-left md:text-right flex flex-col justify-center">
+                                    <span class="text-[12px] text-[#f43f5e] uppercase tracking-widest font-heading font-bold mb-1">Premium Pricing</span>
+                                    <span class="text-[10px] text-apple-muted80">Lower suitability</span>
+                                </div>
+                                <div class="text-right pl-4 border-l border-apple-hairline">
+                                    <span class="block text-[21px] font-heading font-bold text-apple-ink">₹10.03</span>
+                                    <span class="text-[11px] text-apple-muted80 uppercase tracking-widest font-semibold">Total Cost</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-[12px] text-apple-muted80">April 2026 estimates; USD/INR assumption: ₹94.88. Translation only; totals may reflect rounding.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    
+
+    <script src="app.js" defer></script>
 </body>
 </html>

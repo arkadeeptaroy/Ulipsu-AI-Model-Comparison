@@ -1,8 +1,0 @@
-node_modules/
-coverage/
-.env
-.env.*
-*.srt
-*.csv
-*.log
-.DS_Store

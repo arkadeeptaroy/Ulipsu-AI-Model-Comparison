@@ -1,69 +1,27 @@
-# Subtitle Benchmark
+# AI Model Evaluation: SRT Translation
 
-A browser-based decision-support tool for evaluating English-to-Hindi educational subtitle localisation. It compares linguistic quality, cue integrity, reading pace and estimated operating cost using a common dataset and explicit release gates.
+A static comparison dashboard for evaluating English-to-Hindi subtitle translation across AI model variants for educational content.
 
-**The included benchmark is synthetic.** Candidate labels, ratings, translations and cost assumptions are fictional examples, not measured vendor performance, provider pricing or a production recommendation.
+## Dashboard
 
-## Run locally
+- Model ranking and recorded suitability scores
+- Capability comparison across five evaluation dimensions
+- Reported character counts for a comparison cue
+- Original SRT excerpts and qualitative translation evidence
+- Model selection and estimated translation costs
 
-Requires a modern browser with Unicode grapheme segmentation support. For local development, use Node.js 20+ for tests and Python 3 for the static server.
+The ranking, dimension scores, character counts and cost figures are from the recorded evaluation, not live provider metrics. Character count is not a characters-per-second measurement without a corresponding cue duration. Pacing scores are recorded assessment scores, not measured CPS.
+
+## Implementation
+
+`index.html` contains the dashboard and evaluation excerpts. `styles.css` extends the original visual theme. `app.js` handles navigation, keyboard-accessible tabs and charts. Numeric tables provide a fallback if Chart.js is unavailable.
+
+The dashboard uses Tailwind CSS and Chart.js and requires no backend or build step. Serve from a static host, including GitHub Pages.
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Open http://localhost:8000 in a browser. The application is also compatible with root-level GitHub Pages hosting. It does not require a build step, package installation, backend or API credentials.
+## Licence
 
-```sh
-npm test
-```
-
-## Evaluation workflow
-
-1. Explore the synthetic benchmark or import a reviewed JSON dataset. Download the example from the dashboard for the supported schema.
-2. Alternatively, import a source SRT and one candidate SRT for structural and pacing analysis. Raw SRT pairs do not have linguistic ratings and cannot qualify.
-3. Set the pacing limit and minimum quality and pacing compliance. Inspect missing cues, timing changes, critical errors and individual human ratings.
-4. Model API and reviewer costs with explicit inputs. Export aggregate metrics as CSV.
-
-## Decision model
-
-| Measure | Definition |
-| --- | --- |
-| Linguistic quality | Human ratings normalised to 100; meaning 40%, grammar 20%, register 20%, pedagogy 20% |
-| Coverage | Nonempty matched candidate cues / source cues |
-| Cue integrity | Exact timestamp alignment and no unexpected cue IDs |
-| Reading pace | Visible Unicode grapheme clusters / actual candidate cue duration |
-| Review coverage | Matched cues with complete ratings and critical-error flag / source cues |
-| Cost | Input and output token charges plus reviewer time |
-
-Qualification requires full coverage, no unexpected cues, exact timings, full human review, zero critical errors and configurable quality and pacing thresholds. Qualified candidates are ordered by quality, pacing compliance and candidate ID. Cost is shown separately to avoid hiding quality failures behind a lower price.
-
-## Architecture
-
-```text
-index.html             Accessible dashboard shell
-styles.css             Responsive layout and design tokens
-src/core.mjs           Validation, SRT parsing, scoring, decision gates, CSV
-src/demo.mjs           Synthetic example dataset
-src/app.mjs            Browser state, rendering, imports and exports
-tests/core.test.mjs    Dependency-free regression suite
-docs/methodology.md    Evaluation protocol, schema and assumptions
-docs/product-spec.md   Requirements, acceptance criteria and roadmap
-CHANGELOG.md           Versioned implementation history
-```
-
-The calculation module is independent of the DOM. The dashboard uses native browser APIs and has no external scripts, fonts, trackers or remote data requests. Imports are processed in memory and discarded on reload. CSV export contains candidate-level aggregates, not subtitle text. Imported data is not persisted by this application. Hosting infrastructure may maintain normal access logs.
-
-## Documentation
-
-- [Evaluation protocol and JSON schema](docs/methodology.md)
-- [Product specification and acceptance criteria](docs/product-spec.md)
-- [Change history](CHANGELOG.md)
-
-## Scope
-
-This is a decision-support prototype, not an automated translation service. Actual selection requires a representative reviewed corpus, documented model versions and prompts, reproducible runs, independently verified pricing, operational testing and learner validation.
-
-## License
-
-All rights reserved. This repository is not open source. See [LICENSE](LICENSE) for applicable restrictions.
+All rights reserved. See [LICENSE](LICENSE).
